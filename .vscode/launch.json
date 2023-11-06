@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "Aboba",
             "program": "${workspaceFolder}/a.out",
-            "args": ["-b 1primer.txt"],
+            "args": ["-bn","123.txt"],
             "cwd": "${workspaceFolder}"
         }
     ]

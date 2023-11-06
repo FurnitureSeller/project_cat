@@ -1,54 +1,5 @@
-#include "cat_functions.h"
-#include <getopt.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "s21_cat.h"
 
-
-AllFlags ReadFlags(int argc, char **argv);
-
-typedef struct {
-  bool flag_b;
-  bool flag_e;
-  bool flag_v;
-  bool flag_n;
-  bool flag_s;
-  bool flag_t;
-} AllFlags;
-
-
-AllFlags ReadFlags(int argc,char **argv) { 
-  struct option longopts[] = {
-      {"number-nonblank", 0, NULL, 'b'},
-      {"number", 0, NULL, 'n'},
-      {"squeeze-blank", 0, NULL, 's'},
-      {NULL, 0, NULL, 0}
-      }; 
-  int FlagNow = 0;
-  AllFlags SensorFlags = {0, 0, 0, 0, 0, 0};
-
-  while ((FlagNow = getopt_long(argc, argv, "bevEnstT", longopts, NULL)) != -1) {
-    switch (FlagNow) {
-    case 'b':
-    SensorFlags.flag_b = 1;
-    break; case 'e':
-    SensorFlags.flag_e = 1;
-    case 'v':
-    SensorFlags.flag_v = 1;
-    break; case 'E':
-    SensorFlags.flag_e = 1;
-    break; case 'n':
-    SensorFlags.flag_n = 1;
-    break; case 's':
-    SensorFlags.flag_s = 1;
-    break; case 't':
-    SensorFlags.flag_v = 1;
-    case 'T':
-    SensorFlags.flag_t = 1;
-    }
-  }
-  return SensorFlags;
-}
 
 void CatSetTable(const char *table[static 256])
 {
@@ -101,10 +52,11 @@ const char *table3[] = {
 "M-R", "M-S", "M-T", "M-U", "M-V", "M-W", "M-X", "M-Y", "M-Z", "M-[",
 "M-\\", "M-]", "M-^", "M-_", "M-`", "M-a", "M-b", "M-c", "M-d", "M-e",
 "M-f", "M-g", "M-h", "M-i", "M-j", "M-k", "M-l", "M-m", "M-n", "M-o",
-"M-p", "M-q", "M-r", "M-s", "M-t", "M-u", "M-v", "M-w", "M-x", "M-y"};
+"M-p", "M-q", "M-r", "M-s", "M-t", "M-u", "M-v", "M-w", "M-x", "M-y"
+};
 memcpy(table,table1,sizeof table1);
-memcpy(table[9+2],table2,sizeof table2);
-memcpy(table['~'+1],table3,sizeof table3);
+memcpy(&table[9+2],table2,sizeof table2);
+memcpy(&table['~'+ 1],table3,sizeof table3);
 }
 
 void Flag_T(const char *table[static 256]) {
