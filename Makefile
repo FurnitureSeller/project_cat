@@ -1,8 +1,8 @@
 CC = gcc
 C_FLAGS = -Wall -Werror -Wextra -std=c11 -pedantic -g
 
-s21_cat: s21_cat.c s21_cat.h
-	$(CC) $(C_FLAGS) -o s21_cat s21_cat.c
+s21_cat: s21_cat.c s21_cat.h s21_cat_help.c
+	$(CC) $(C_FLAGS) -o s21_cat s21_cat.c s21_cat_help.c
 
 test_cat:
 	sh ./test_cat.sh

@@ -7,9 +7,9 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Aboba",
+            "name": "BugHunter",
             "program": "${workspaceFolder}/a.out",
-            "args": ["-bn","123.txt"],
+            "args": ["-e","coffe","-e","donut","1p.txt","1pp.txt"],
             "cwd": "${workspaceFolder}"
         }
     ]
