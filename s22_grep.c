@@ -9,7 +9,7 @@
 
 
 typedef struct {
-    char *pattern;
+    char *pattern;  //подобие динамической строки
     size_t size;
     int regex_flag; //e i
     bool invert;
@@ -20,24 +20,24 @@ typedef struct {
 } AllFlags;
 
 
-char *string_append_expr(char *string, size_t *size, char const *expr,size_t size_expr) {
-    string = realloc(string,*size + size_expr + 7);
-    string[*size] = '\\';
-    string[*size + 1] = '|';
-    string[*size + 2] = '\\';
-    string[*size + 3] = '(';
-    memcpy(string + *size + 4, expr, size_expr);
-    *size += size_expr + 4;
-    string[*size] = '\\';
-    string[*size + 1] = ')';
-    string[*size + 2] = '\0';
+char *Optargunion(char *OneDinstring, size_t *size, char const *target,size_t size_target) {
+    OneDinstring = realloc(OneDinstring,*size + size_target + 7);
+    OneDinstring[*size] = '\\';
+    OneDinstring[*size + 1] = '|';
+    OneDinstring[*size + 2] = '\\';
+    OneDinstring[*size + 3] = '(';
+    memcpy(OneDinstring + *size + 4, target, size_target);
+    *size += size_target + 4;
+    OneDinstring[*size] = '\\';
+    OneDinstring[*size + 1] = ')';
+    OneDinstring[*size + 2] = '\0';
     *size += 2;
-    return string;
+    return OneDinstring;
 }
 
 AllFlags ReadFlags(int argc,char **argv) {  
   AllFlags flags = {NULL, 0, 0, false, false, false,false,false};
-  char FlagNow = getopt_long(argc,argv,"e:ivclno",0,0);
+  char FlagNow = 0; //getopt_long(argc,argv,"e:ivclno",0,0);
   flags.pattern = malloc(2);
   flags.pattern[0] = '\\';
   flags.pattern[1] = '\0';
@@ -46,8 +46,8 @@ AllFlags ReadFlags(int argc,char **argv) {
     printf("optarg = %s\n",optarg);   /*efwefewfgergergrggergergergergergergergreg*/
     switch (FlagNow) {
     case 'e':
-        flags.pattern = string_append_expr(flags.pattern,&pattern_size,optarg,strlen(optarg));
-    break; case 'i':
+        flags.pattern = Optargunion(flags.pattern,&pattern_size,optarg,strlen(optarg)); 
+    break; case 'i':            /*вернула динам стрк в структуру и ее размер(косвенно,ниже точн)*/
         flags.regex_flag |= REG_ICASE;
     break; case 'v':
         flags.invert = true;
@@ -62,9 +62,9 @@ AllFlags ReadFlags(int argc,char **argv) {
     }
   }
   if(pattern_size) {
-    flags.size = pattern_size;
+    flags.size = pattern_size;  //размер дин стрки вернули в структуру
   }
-  return flags;
+  return flags;  
 }
 void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,int count_file) {
     char *line = 0;
@@ -84,46 +84,47 @@ void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,i
     free(line);
 }
 void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename){
-    char *line = 0;
+    char *line = NULL; /* Null l added*/
     (void) flags;
     size_t length = 0;
     regmatch_t match;
-    int count = 0;
+    int strokaCounter = 0;
     while(getline(&line,&length,file) > 0) {
-        count++;
-     if(flags.invert) {
-        if(regexec(preg,line,1,&match,0) ) {
+        strokaCounter++;
+     if(flags.invert) {  /* ЕСЛИ ФЛАГ V*/
+        if(regexec(preg,line,1,&match,0) ) { //что за match!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if(flags.printMatched)
             ;
             else { 
-                if(flags.numberLine)
-                    printf("%s:%i:%s",filename,count,line);
+                if(flags.numberLine) //ЕСЛИ N
+                    printf("%s:%i:%s",filename,strokaCounter,line);
                 else
                     printf("%s",line);
             }
         }
-     }
-     else {
-        if(!regexec(preg,line,1,&match,0)) {
-            if(flags.printMatched) {
-                if(flags.numberLine)
-                    printf("%s:%i:%.*s\n",filename,count,match.rm_eo - match.rm_so,line + match.rm_so);
-                else
+     } /*Она принимает пять аргументов: указатель на скомпилированное регулярное выражение, строку, которую нужно проверить, количество элементов в массиве, указывающем на подвыражения, массив, указывающий на подвыражения, и флаги, которые могут изменять поведение сопоставления */
+     else { /* Если флаг не V*/
+        if(!regexec(preg,line,1,&match,0)) {   
+            if(flags.printMatched) {  // Флаг -О
+                if(flags.numberLine)  // если ФЛАГ -N
+                    printf("%s:%i:%.*s\n",filename,strokaCounter,match.rm_eo - match.rm_so,line + match.rm_so);
+                else   // КАКОЙ ЕЩЕ ДРУГОЙ СЛУЧАЙ?
                     printf("%.*s\n",match.rm_eo - match.rm_so,line + match.rm_so);
+                    /*ЧТО ЭТООООООО*/
                 char *remaining = line + match.rm_eo;
                 while(!regexec(preg,remaining,1,&match,0)) {
                     if(flags.numberLine)
-                         printf("%s:%i:%.*s\n",filename,count,match.rm_eo - match.rm_so,remaining + match.rm_so);
+                         printf("%s:%i:%.*s\n",filename,strokaCounter,match.rm_eo - match.rm_so,remaining + match.rm_so);
                     else
                         printf("%.*s\n",match.rm_eo - match.rm_so,remaining + match.rm_so);
                     remaining = remaining + match.rm_eo;
                 }
             }
             else {
-                if(flags.numberLine)
-                    printf("%s:%i:%s",filename,count,line);
+                if(flags.numberLine) // если ФЛАГ -N
+                    printf("%s:%i:%s",filename,strokaCounter,line);
                 else
-                  printf("%s",line);
+                  printf("%s:%s",filename,line); //печатает ответ без флагов!
             }
         }
      } 
@@ -135,14 +136,14 @@ void Grep(int argc,char *argv[],AllFlags flags) {
     char **end = &argv[argc];
     regex_t preg_storage;
     regex_t *preg = &preg_storage;
-    if(flags.size == 0) {
+    if(flags.size == 0) {    // интересно что будет без паттерна
         if(regcomp(preg,argv[0],flags.regex_flag)) {
             fprintf(stderr,"faild to cimpile regex\n");
             exit(1);
         }
     }
     else {                                  
-        if(regcomp(preg, flags.pattern + 2, flags.regex_flag)){        
+        if(regcomp(preg, flags.pattern + 2, flags.regex_flag)){    //зачем ей флаг?    
           fprintf(stderr, "faild to cimpile regex\n"); 
           exit(1);
     }
@@ -161,20 +162,19 @@ for(char **filename = argv + (flags.size ? 0 : 1);filename != end; ++filename) {
         printf("%s",*filename);
         printf("Творит дич\n");
         continue;
-    }
+      }
     if(flags.count) {
         GrepCount(ch,*filename,flags,preg,argc);
-    }
+      }
     else
         GrepFile(ch,flags,preg,*filename);
-    fclose(ch);
-    }
-  regfree(preg);
+        fclose(ch);
+  }
+    regfree(preg);
 }
 
 int main(int argc, char *argv[]) {
   AllFlags flags = ReadFlags(argc,argv);
-  printf("%d",optind);
   argv += optind;     /*изначально равен 1*/
   argc -= optind;       /*содержит указатель на текущее значение, связанное с опцией, требующей аргумент*/
   if(argc == 0) {       /*В этом примере, после обработки всех опций */
@@ -182,4 +182,5 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
   Grep(argc,argv,flags);
+  return 0;
 }

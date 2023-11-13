@@ -120,7 +120,7 @@ if(regcomp(preg,*pattern,flags.regex_flag)){         /*pattern указател�
     exit(1);
 }
 
-for(char **filename = pattern + 1;  // шагает по файлам
+for(char **filename = pattern + 1;  // шагает к файлам
   filename != end; ++filename) {
     if(**filename == '-') 
       continue;
@@ -130,7 +130,7 @@ for(char **filename = pattern + 1;  // шагает по файлам
   }
   
 for(char **filename = pattern + 1;  // шагает по файлам
-  filename != end; ++filename) {
+  filename != end; filename++) {
     if(**filename == '-') 
       continue;
     FILE *ch = fopen(*filename, "rb");

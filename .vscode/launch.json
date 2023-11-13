@@ -9,7 +9,7 @@
             "request": "launch",
             "name": "BugHunter",
             "program": "${workspaceFolder}/a.out",
-            "args": ["-e","coffe","-e","donut","1p.txt","1pp.txt"],
+            "args": ["-e","coffe","1pp.txt"],
             "cwd": "${workspaceFolder}"
         }
     ]
