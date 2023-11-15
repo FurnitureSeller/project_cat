@@ -6,34 +6,19 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
+#include "s22_grep.h"
 
 
 typedef struct {
     char *Mpattern;  //подобие динамической строки
     size_t Msize;
-    int regex_flag; //e i
+    int regex_flag; 
     bool invert;
     bool count;
     bool filesMatch;
     bool numberLine;
     bool printMatched;
 } AllFlags;
-
-
-char *Optargunion(char *OneDinstring, size_t *Msize, char const *target,size_t size_target) {
-    OneDinstring = realloc(OneDinstring,*Msize + size_target + 7);
-    OneDinstring[*Msize] = '\\';
-    OneDinstring[*Msize + 1] = '|';
-    OneDinstring[*Msize + 2] = '\\';
-    OneDinstring[*Msize + 3] = '('; /*расширяем мегагурендан*/
-    memcpy(OneDinstring + *Msize + 4, target, size_target); //три аргумента: указатель на целевую область памяти, указатель на исходную область памяти и количество байтов для копирования
-    *Msize += size_target + 4;
-    OneDinstring[*Msize] = '\\';
-    OneDinstring[*Msize + 1] = ')';
-    OneDinstring[*Msize + 2] = '\0';
-    *Msize += 2;
-    return OneDinstring;
-}
 
 AllFlags ReadFlags(int argc,char **argv) {  
   AllFlags flags = {NULL, 0, 0, false, false, false,false,false};
@@ -65,6 +50,7 @@ AllFlags ReadFlags(int argc,char **argv) {
   }
   return flags;  
 }
+
 void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,int count_file) {
     char *line = 0;
     (void) flags;
@@ -82,7 +68,7 @@ void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,i
         printf("%s:%i\n",filename,count);
     free(line);
 }
-void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename){
+void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_files) {
     char *line = NULL; /* Null l added*/
     (void) flags;
     size_t length = 0; //сама ему поддаст
@@ -97,6 +83,9 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename){
             else { 
                 if(flags.numberLine) //ЕСЛИ N
                     printf("%s:%i:%s",filename,strokaCounter,line);
+                if(count_files >= 2) {                                         //СОМНЕВАЮСЬ
+                    printf("%s:%i:%s",filename,strokaCounter,line);
+                }
                 else
                     printf("%s",line);
             }
@@ -132,7 +121,7 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename){
     free(line);
 }
 
-void Grep(int argc,char *argv[],AllFlags flags) {
+void Grep(int argc,char *argv[],AllFlags flags,int count_files) {
     char **end = &argv[argc];
     regex_t preg_storage;
     regex_t *preg = &preg_storage;
@@ -150,15 +139,6 @@ void Grep(int argc,char *argv[],AllFlags flags) {
 }
 free(flags.Mpattern);
 
-// if(argc == (flags.Msize ? 2 : 1)) {   // флаг -с
-//     if(flags.count) {
-//         GrepCount(stdin,"",flags,preg,1); //выводит только кол совпад строк
-//     }
-//     else
-//         GrepFile(stdin,flags,preg,""); //(FILE *file, AllFlags flags,regex_t *preg,char *filename)
-// }
-
-
 for(char **filename = argv + (flags.Msize ? 0 : 1);filename != end; ++filename) {
     FILE *ch = fopen(*filename, "rb");
     if(ch == NULL) {
@@ -167,29 +147,32 @@ for(char **filename = argv + (flags.Msize ? 0 : 1);filename != end; ++filename) 
         continue;
       }
     if(flags.count) {
-        GrepCount(ch,*filename,flags,preg,argc); //ФЛАГ -l ?????
+        GrepCount(ch,*filename,flags,preg,argc); //ФЛАГ -C ?????
       }
     else
-        GrepFile(ch,flags,preg,*filename);
+        GrepFile(ch,flags,preg,*filename,count_files);
         fclose(ch);
   }
     regfree(preg);
 }
 
 int main(int argc, char *argv[]) {
+  int count_files = 0;
   AllFlags flags = ReadFlags(argc,argv);
+  count_files = argc - optind - 1;
   printf("optind = %d\n",optind);
-
-  printf("%s\n",argv[optind+1]);
-  argv += optind;    //остается количество файлов
-  printf("%s\n",argv[1]);
-  printf("%s\n",argv[0]);
-
-  argc -= optind;      
-  if(argc == 0) {      
-    fprintf(stderr,"no pattern\n"); 
-    exit(1);
-  }
-  Grep(argc,argv,flags);
+  printf("argc = %d\n",argc);
+  printf("N files %d\n",count_files);
+  checkPattern(&argc,&argv,optind);
+  Grep(argc,argv,flags,count_files);
   return 0;
 }
+
+
+// if(argc == (flags.Msize ? 2 : 1)) {   // флаг -с
+//     if(flags.count) {
+//         GrepCount(stdin,"",flags,preg,1); //выводит только кол совпад строк
+//     }
+//     else
+//         GrepFile(stdin,flags,preg,""); //(FILE *file, AllFlags flags,regex_t *preg,char *filename)
+// }

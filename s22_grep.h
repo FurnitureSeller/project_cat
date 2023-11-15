@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+void checkPattern(int *argc, char **argv[],int optind);
+char *Optargunion(char *OneDinstring, size_t *Msize, char const *target,size_t size_target);
 
 
 #endif
