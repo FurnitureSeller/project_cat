@@ -50,13 +50,14 @@ AllFlags ReadFlags(int argc,char **argv) {
   }
   return flags;  
 }
-
+/*нужен для флага C*/
 void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,int count_file) {
     char *line = 0;
     (void) flags;
     size_t length = 0;
     regmatch_t match;
     int count = 0;
+    printf("N files = %d\n", count_file);
     while(getline(&line,&length,file) > 0) {
         if((!regexec(preg,line,1,&match,0))) {
             count++;
@@ -68,12 +69,15 @@ void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,i
         printf("%s:%i\n",filename,count);
     free(line);
 }
+
+
 void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_files) {
     char *line = NULL; /* Null l added*/
     (void) flags;
     size_t length = 0; //сама ему поддаст
     regmatch_t match;
     int strokaCounter = 0;
+    int Match_helper = 1;
     while(getline(&line,&length,file) > 0) { //три аргумента: указатель на строку, в которую будет записываться ввод, указатель на переменную, которая хранит размер буфера строки, и файловый дескриптор ввода
         strokaCounter++;
      if(flags.invert) {  /* ЕСЛИ ФЛАГ V*/
@@ -109,11 +113,18 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
                         remaining = remaining + match.rm_eo;
                     }
                 }
+             
             else {
                     if(flags.numberLine) // если ФЛАГ -N
                         printf("%s:%i:%s",filename,strokaCounter,line);
-                    else
-                    printf("%s:%s",filename,line); //печатает ответ без флагов!
+                    if(flags.filesMatch && Match_helper == 1) {
+                        printf("%s",filename); 
+                        Match_helper = 0; 
+                        }
+                    else {
+                        if(!flags.filesMatch)
+                            printf("%s:%s",filename,line); //печатает ответ без флагов!
+                    }
                 }
         }
      } 
@@ -147,7 +158,7 @@ for(char **filename = argv + (flags.Msize ? 0 : 1);filename != end; ++filename) 
         continue;
       }
     if(flags.count) {
-        GrepCount(ch,*filename,flags,preg,argc); //ФЛАГ -C ?????
+        GrepCount(ch,*filename,flags,preg,count_files); //ФЛАГ -C ?????
       }
     else
         GrepFile(ch,flags,preg,*filename,count_files);
