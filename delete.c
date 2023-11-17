@@ -1,4 +1,4 @@
-#define _GNU_SOURCE //getline
+#define _GNU_SOURCE 
 #include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <string.h>
 #include "s22_grep.h"
+
 
 typedef struct {
     char *Mpattern;  //подобие динамической строки
@@ -17,27 +18,16 @@ typedef struct {
     bool filesMatch;
     bool numberLine;
     bool printMatched;
-    bool onlyline;
-    bool nonstop;
-    char *patternfile;
-    size_t Fsize;
 } AllFlags;
 
 AllFlags ReadFlags(int argc,char **argv) {  
-  AllFlags flags = {NULL, 0, 0, false, false, false,false,false,false,false,NULL,0};
-  char FlagNow = 0; 
+  AllFlags flags = {NULL, 0, 0, false, false, false,false,false};
+  char FlagNow = 0; //getopt_long(argc,argv,"e:ivclno",0,0);
   flags.Mpattern = malloc(2);
   flags.Mpattern[0] = '\\';
   flags.Mpattern[1] = '\0';
-  size_t pattern_size = 0; 
-
-  flags.patternfile = malloc(2);
-  flags.patternfile[0] = '\\';
-  flags.patternfile[1] = '\0';
-  size_t fpattern_size = 0; 
-
-
-  while ((FlagNow = getopt_long(argc,argv,"e:ivclnohsf:",0,0)) != -1) {
+  size_t pattern_size = 0;              
+  while ((FlagNow = getopt_long(argc,argv,"e:ivclno",0,0)) != -1) {
     switch (FlagNow) {
     case 'e':
         flags.Mpattern = Optargunion(flags.Mpattern,&pattern_size,optarg,strlen(optarg)); 
@@ -53,24 +43,13 @@ AllFlags ReadFlags(int argc,char **argv) {
         flags.numberLine = true;
     break; case 'o':
         flags.printMatched = true;
-    break; case 'h':
-        flags.onlyline = true;
-    break;case 's':
-        flags.nonstop = true;
-    break;case 'f':
-        flags.patternfile = filePattern(flags.patternfile, &fpattern_size, optarg);
-    break;
     }
   }
   if(pattern_size) {
-    flags.Msize = pattern_size;  
-  }
-  if(fpattern_size) {
-    flags.Fsize = fpattern_size;  
+    flags.Msize = pattern_size;  //размер дин стрки вернули в структуру
   }
   return flags;  
 }
-
 /*нужен для флага C*/
 void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,int count_file) {
     char *line = 0;
@@ -78,6 +57,7 @@ void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,i
     size_t length = 0;
     regmatch_t match;
     int count = 0;
+    printf("N files = %d\n", count_file);
     while(getline(&line,&length,file) > 0) {
         if((!regexec(preg,line,1,&match,0))) {
             count++;
@@ -100,9 +80,8 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
     int Match_helper = 1;
     while(getline(&line,&length,file) > 0) { //три аргумента: указатель на строку, в которую будет записываться ввод, указатель на переменную, которая хранит размер буфера строки, и файловый дескриптор ввода
         strokaCounter++;
-        line[strcspn(line, "\n")] = '\0';
      if(flags.invert) {  /* ЕСЛИ ФЛАГ V*/
-        if(regexec(preg,line,1,&match,0) ) { 
+        if(regexec(preg,line,1,&match,0) ) { //что за match!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if(flags.printMatched)
             ;
             else { 
@@ -137,17 +116,14 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
              
             else {
                     if(flags.numberLine) // если ФЛАГ -N
-                        printf("%s:%i:%s\n",filename,strokaCounter,line);
-                    else if(flags.filesMatch && Match_helper == 1) {
-                        printf("%s\n",filename); 
+                        printf("%s:%i:%s",filename,strokaCounter,line);
+                    if(flags.filesMatch && Match_helper == 1) {
+                        printf("%s",filename); 
                         Match_helper = 0; 
                         }
-                    else if(flags.onlyline) {
-                        printf("%s\n",line);
-                    }
                     else {
                         if(!flags.filesMatch)
-                            printf("%s:%s\n",filename,line); //печатает ответ без флагов!
+                            printf("%s:%s",filename,line); //печатает ответ без флагов!
                     }
                 }
         }
@@ -156,92 +132,48 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
     free(line);
 }
 
-void Patterfinder(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_files) { 
-    char *line = NULL; 
-    size_t length = 0;
-    regmatch_t match;
-    int strokaCounter = 0;
-    
-    int coincid = 0;
-
-  while(getline(&line,&length,file) > 0) { //три аргумента: указатель на строку, в которую будет записываться ввод, указатель на переменную, которая хранит размер буфера строки, и файловый дескриптор ввода
-    line[strcspn(line, "\n")] = '\0';
-      if(!regexec(preg,line,1,&match,0)) 
-        coincid = 1;  
-      }
-
-  if (coincid == 1) {
-    
-    while(getline(&line,&length,file) > 0) { //три аргумента: указатель на строку, в которую будет записываться ввод, указатель на переменную, которая хранит размер буфера строки, и файловый дескриптор ввода
-      strokaCounter++;
-      line[strcspn(line, "\n")] = '\0';
-        if(!regexec(preg,line,1,&match,0)) {
-           if(count_files >= 2) {                                         //СОМНЕВАЮСЬ
-            printf("%s:%i:%s",filename,strokaCounter,line);
-                }
-            else
-              printf("%s",line);
-        }  
-    }
-  } 
-}
-
 void Grep(int argc,char *argv[],AllFlags flags,int count_files) {
     char **end = &argv[argc];
     regex_t preg_storage;
     regex_t *preg = &preg_storage;
-    if(flags.Msize == 0 && flags.patternfile == 0) {    //В МЕЙН интересно что будет без паттерна // 
+    if(flags.Msize == 0) {    //В МЕЙН интересно что будет без паттерна // 
         if(regcomp(preg,argv[0],flags.regex_flag)) { //а точно ли строка это argv[0]
             fprintf(stderr,"faild to cimpile regex\n");
             exit(1);
         }
     }
-    else if(flags.Msize) {                  /*+2 тип строка \0???*/                
+    else {                  /*+2 тип строка \0???*/                
         if(regcomp(preg, flags.Mpattern + 2, flags.regex_flag)){    //зачем ей флаг?    
           fprintf(stderr, "faild to cimpile regex\n"); 
           exit(1);
-        }
     }
-    else if(flags.patternfile){
-        if(regcomp(preg, flags.patternfile + 2, flags.regex_flag)){    //зачем ей флаг?    
-          fprintf(stderr, "faild to cimpile regex\n"); 
-          exit(1);
-        }
-    }       /*ДЕФОЛТНЫЙ СЛУЧАЙ*/
-   free(flags.Mpattern);
-   free(flags.patternfile);
+}
+free(flags.Mpattern);
 
-    for(char **filename = argv + (flags.Msize ? 0 : 1 || flags.Fsize ? 0 : 1);filename != end; ++filename) {
-        FILE *ch = fopen(*filename, "rb");
-        if(ch == NULL) {
-            if(flags.nonstop)
-                continue;
-            else {
-            printf("%s",*filename);
-            printf("Творит дич\n");
-            continue;
-            }
-        }
-        if(flags.count) {
-            GrepCount(ch,*filename,flags,preg,count_files); //ФЛАГ -C ?????
-        }
-        else if (flags.Fsize) {
-            Patterfinder(ch,flags,preg,*filename,count_files);
-            fclose(ch);
-        }
-        
-        else {
-            GrepFile(ch,flags,preg,*filename,count_files);
-            fclose(ch);
-        }
-    }
-        regfree(preg);
+for(char **filename = argv + (flags.Msize ? 0 : 1);filename != end; ++filename) {
+    FILE *ch = fopen(*filename, "rb");
+    if(ch == NULL) {
+        printf("%s",*filename);
+        printf("Творит дич\n");
+        continue;
+      }
+    if(flags.count) {
+        GrepCount(ch,*filename,flags,preg,count_files); //ФЛАГ -C ?????
+      }
+    else
+        GrepFile(ch,flags,preg,*filename,count_files);
+        fclose(ch);
+  }
+    regfree(preg);
 }
 
 int main(int argc, char *argv[]) {
   int count_files = 0;
   AllFlags flags = ReadFlags(argc,argv);
   count_files = argc - optind;
+  printf("optind = %d\n",optind);
+  printf("argc = %d\n",argc);
+  printf("N files %d\n",count_files);
   checkPattern(&argc,&argv,optind);
   Grep(argc,argv,flags,count_files);
   return 0;
