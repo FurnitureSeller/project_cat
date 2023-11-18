@@ -119,7 +119,7 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
      if(flags.invert) {  /* ЕСЛИ ФЛАГ V*/
         if(regexec(preg,line,1,&match,0) ) { 
           if(count_files >= 2)                                         
-            printf("%s:%i:%s\n",filename,strokaCounter,line);
+            printf("%s:%s\n",filename,line);
           else
             printf("%s\n",line);
         }
@@ -127,21 +127,21 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
 
      else { /* Если флаг не V*/
         if(!regexec(preg,line,1,&match,0)) {   
-            if(flags.printMatched) {  // Флаг -О
-                    if(flags.numberLine)  // если ФЛАГ -N
-                        printf("%s:%i:%.*s\n",filename,strokaCounter,match.rm_eo - match.rm_so,line + match.rm_so);
-                    else   // КАКОЙ ЕЩЕ ДРУГОЙ СЛУЧАЙ?
-                        printf("%.*s\n",match.rm_eo - match.rm_so,line + match.rm_so);
-                    char *remaining = line + match.rm_eo;
-                    while(!regexec(preg,remaining,1,&match,0)) {
-                        if(flags.numberLine)
-                            printf("%s:%i:%.*s\n",filename,strokaCounter,match.rm_eo - match.rm_so,remaining + match.rm_so);
-                        else
-                            printf("%.*s\n",match.rm_eo - match.rm_so,remaining + match.rm_so);
-                        remaining = remaining + match.rm_eo;
-                    }
-                }
-             
+        if(flags.printMatched) {  // Флаг -О     
+          if(count_files >= 2)  
+            printf("%s:%.*s\n",filename,match.rm_eo - match.rm_so,line + match.rm_so);
+           else
+            printf("%.*s\n",match.rm_eo - match.rm_so,line + match.rm_so);
+            char *remaining = line + match.rm_eo;
+            while(!regexec(preg,remaining,1,&match,0)) {
+              if(count_files >= 2)  
+                printf("%s:%.*s\n",filename,match.rm_eo - match.rm_so,remaining + match.rm_so);
+              else
+                printf("%.*s\n",match.rm_eo - match.rm_so,remaining + match.rm_so);
+              remaining = remaining + match.rm_eo;
+            }
+        }
+            
             else {
                     if(flags.numberLine) // если ФЛАГ -N
                         printf("%s:%i:%s\n",filename,strokaCounter,line);
@@ -251,13 +251,3 @@ int main(int argc, char *argv[]) {
   Grep(argc,argv,flags,count_files);
   return 0;
 }
-
-
-
-// if(argc == (flags.Msize ? 2 : 1)) {   // флаг -с
-//     if(flags.count) {
-//         GrepCount(stdin,"",flags,preg,1); //выводит только кол совпад строк
-//     }
-//     else
-//         GrepFile(stdin,flags,preg,""); //(FILE *file, AllFlags flags,regex_t *preg,char *filename)
-// }
