@@ -7,31 +7,6 @@
 #include <limits.h>
 #include <string.h>
 
-
-
-typedef struct {
-    char *Mpattern;  //подобие динамической строки
-    size_t Msize;
-    int regex_flag; 
-    bool invert;
-    bool count;
-    bool filesMatch;
-    bool numberLine;
-    bool printMatched;
-    bool onlyline;
-    bool nonstop;
-    bool patternfile;
-} AllFlags;
-
-void checkPattern(int *argc, char **argv[],int optind) {
-  *argv += optind;    //остается количество файлов
-  *argc -= optind;      
-  if(*argc == 0) {      
-    fprintf(stderr,"no pattern\n"); 
-    exit(1);
-  }
-}
-
 char *Optargunion(char *OneDinstring, size_t *Msize, char const *target,size_t size_target) {
     OneDinstring = realloc(OneDinstring,*Msize + size_target + 7);
     OneDinstring[*Msize] = '\\';

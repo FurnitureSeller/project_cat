@@ -23,6 +23,22 @@ typedef struct {
     size_t Fsize;
 } AllFlags;
 
+int checkPattern(int *argc, char **argv[],int optind,AllFlags flags) {
+  int count_files = 0;
+  *argv += optind;    //остается количество файлов
+  *argc -= optind;      
+  if(*argc == 0) {      
+    fprintf(stderr,"no pattern\n"); 
+    exit(1);
+  }
+  if(flags.Msize || flags.Fsize) 
+    count_files = *argc;
+  else
+    count_files = *argc - 1;
+
+  return count_files;
+}
+
 AllFlags ReadFlags(int argc,char **argv) {  
   AllFlags flags = {NULL, 0, 0, false, false, false,false,false,false,false,NULL,0};
   char FlagNow = 0; 
@@ -35,7 +51,6 @@ AllFlags ReadFlags(int argc,char **argv) {
   flags.patternfile[0] = '\\';
   flags.patternfile[1] = '\0';
   size_t fpattern_size = 0; 
-
 
   while ((FlagNow = getopt_long(argc,argv,"e:ivclnohsf:",0,0)) != -1) {
     switch (FlagNow) {
@@ -92,9 +107,9 @@ void GrepCount (FILE *file, char const *filename, AllFlags flags,regex_t *preg,i
 
 
 void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_files) {
-    char *line = NULL; /* Null l added*/
+    char *line = NULL; 
     (void) flags;
-    size_t length = 0; //сама ему поддаст
+    size_t length = 0; 
     regmatch_t match;
     int strokaCounter = 0;
     int Match_helper = 1;
@@ -103,17 +118,10 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
         line[strcspn(line, "\n")] = '\0';
      if(flags.invert) {  /* ЕСЛИ ФЛАГ V*/
         if(regexec(preg,line,1,&match,0) ) { 
-            if(flags.printMatched)
-            ;
-            else { 
-                if(flags.numberLine) //ЕСЛИ N
-                    printf("%s:%i:%s",filename,strokaCounter,line);
-                if(count_files >= 2) {                                         //СОМНЕВАЮСЬ
-                    printf("%s:%i:%s",filename,strokaCounter,line);
-                }
-                else
-                    printf("%s",line);
-            }
+          if(count_files >= 2)                                         
+            printf("%s:%i:%s\n",filename,strokaCounter,line);
+          else
+            printf("%s\n",line);
         }
      } // 5 арг-указ на ском рег выраж, строку, котор проверить, кол элем в массиве, указывающем на подвыражения, массив, указывающий на подвыражения, и флаги, которые могут изменять поведение сопоставления */
 
@@ -124,7 +132,6 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
                         printf("%s:%i:%.*s\n",filename,strokaCounter,match.rm_eo - match.rm_so,line + match.rm_so);
                     else   // КАКОЙ ЕЩЕ ДРУГОЙ СЛУЧАЙ?
                         printf("%.*s\n",match.rm_eo - match.rm_so,line + match.rm_so);
-                        /*ЧТО ЭТООООООО*/
                     char *remaining = line + match.rm_eo;
                     while(!regexec(preg,remaining,1,&match,0)) {
                         if(flags.numberLine)
@@ -157,40 +164,36 @@ void GrepFile(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_
 }
 
 void Patterfinder(FILE *file, AllFlags flags,regex_t *preg,char *filename,int count_files) { 
-    char *line = NULL; 
+    char *line = NULL;
     size_t length = 0;
     regmatch_t match;
     int strokaCounter = 0;
-    
     int coincid = 0;
 
-  while(getline(&line,&length,file) > 0) { //три аргумента: указатель на строку, в которую будет записываться ввод, указатель на переменную, которая хранит размер буфера строки, и файловый дескриптор ввода
+  while((getline(&line,&length,file) > 0) && coincid == 0) { //три аргумента: указатель на строку, в которую будет записываться ввод, указатель на переменную, которая хранит размер буфера строки, и файловый дескриптор ввода
     line[strcspn(line, "\n")] = '\0';
       if(!regexec(preg,line,1,&match,0)) 
         coincid = 1;  
       }
-
   if (coincid == 1) {
-    
+    rewind(file);
     while(getline(&line,&length,file) > 0) { //три аргумента: указатель на строку, в которую будет записываться ввод, указатель на переменную, которая хранит размер буфера строки, и файловый дескриптор ввода
       strokaCounter++;
       line[strcspn(line, "\n")] = '\0';
-        if(!regexec(preg,line,1,&match,0)) {
-           if(count_files >= 2) {                                         //СОМНЕВАЮСЬ
-            printf("%s:%i:%s",filename,strokaCounter,line);
-                }
-            else
-              printf("%s",line);
-        }  
+        if(count_files >= 2)                                         //СОМНЕВАЮСЬ
+          printf("%s:%s\n",filename,line);
+        else
+              printf("%s\n",line);
     }
   } 
+  free(line);
 }
 
 void Grep(int argc,char *argv[],AllFlags flags,int count_files) {
     char **end = &argv[argc];
     regex_t preg_storage;
     regex_t *preg = &preg_storage;
-    if(flags.Msize == 0 && flags.patternfile == 0) {    //В МЕЙН интересно что будет без паттерна // 
+    if(flags.Msize == 0 && flags.Fsize == 0) {    //В МЕЙН интересно что будет без паттерна // 
         if(regcomp(preg,argv[0],flags.regex_flag)) { //а точно ли строка это argv[0]
             fprintf(stderr,"faild to cimpile regex\n");
             exit(1);
@@ -210,8 +213,11 @@ void Grep(int argc,char *argv[],AllFlags flags,int count_files) {
     }       /*ДЕФОЛТНЫЙ СЛУЧАЙ*/
    free(flags.Mpattern);
    free(flags.patternfile);
-
-    for(char **filename = argv + (flags.Msize ? 0 : 1 || flags.Fsize ? 0 : 1);filename != end; ++filename) {
+    int sdvig = 1;
+    if(flags.Msize || flags.Fsize)
+      sdvig = 0;
+   
+    for(char **filename = argv + sdvig;filename != end; ++filename) {
         FILE *ch = fopen(*filename, "rb");
         if(ch == NULL) {
             if(flags.nonstop)
@@ -241,11 +247,11 @@ void Grep(int argc,char *argv[],AllFlags flags,int count_files) {
 int main(int argc, char *argv[]) {
   int count_files = 0;
   AllFlags flags = ReadFlags(argc,argv);
-  count_files = argc - optind;
-  checkPattern(&argc,&argv,optind);
+  count_files = checkPattern(&argc,&argv,optind,flags);
   Grep(argc,argv,flags,count_files);
   return 0;
 }
+
 
 
 // if(argc == (flags.Msize ? 2 : 1)) {   // флаг -с
