@@ -11,5 +11,4 @@ void Flag_T(const char *table[static 256]);
 void Flag_E(const char *table[static 256]);
 void CatSet_V(const char *table[static 256]);
 
-
 #endif
